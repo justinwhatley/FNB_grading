@@ -72,11 +72,16 @@ def crop(infile, height, width):
             box = (j*width, i*height, (j+1)*width, (i+1)*height)
             yield im.crop(box)
 
-def split_images(path, height, width):
+def split_images(input_path, output_path, height, width):
+    """
+    Splits all images in the 
+    """
     start_num = 1
     
-    for root, dirs, files in os.walk(path, topdown=False):
-        for name in files:  
+    for root, dirs, files in os.walk(input_path, topdown=False):
+        # Crops all files in the directory
+        for name in files:
+            # Skips files that have already been cropped
             if 'part' in name:
                 continue
 
@@ -86,16 +91,57 @@ def split_images(path, height, width):
                 img = Image.new('RGB', (height,width), 255)
                 img.paste(piece)
                 new_name = name.split('.')[0] + "_part%s.png" % k
-                output_path = os.path.join(path, new_name)
-                img.save(output_path)
+                output = os.path.join(output_path, new_name)
+                img.save(output)
 
+def mkdir(directory):
+    """
+    Safely make directory
+    """
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+def get_subdirectories(directory_path):
+    """
+    Gets subdirectory path
+    """
+    return [os.path.join(directory_path, name) for name in os.listdir(directory_path)
+            if os.path.isdir(os.path.join(directory_path, name))]
 
 def prepare_datasets(path, height, width):
     """ 
     Prepares training and validation sets
     """
-    split_images(path, height, width)
-    
+    print('Loading path: ' + path)
+
+    # Iterates through image datasets
+    training_set = 'train'
+    training_directory = os.path.join(path, training_set)
+    mkdir(training_directory)
+
+    validation_set = 'validation'
+    validation_directory = os.path.join(validation_set)
+    mkdir(validation_directory)
+
+    # Gets the file paths for different classes
+    dataset_subdirs = get_subdirectories(path) 
+    for dataset_subdir in dataset_subdirs:
+        get_subdirectories
+        class_dir = dataset_subdir.split('/')[-1]
+        print(class_dir)                                                                        
+
+    # # Finds the nested files (e.g., )
+    # for root, dirs, files in os.walk(path, topdown=False):
+        
+    #     for class_dir in dirs: 
+    #         class_path = os.path.join(root, class_dir) 
+    #         print
+    #         print(class_path)
+    #         for r, d, f in os.walk(class_path, topdown=False):
+    #             for fi in f:
+    #                 print(fi)
+    #         # split_images(path, training_set, height, width)
+
 def concat_channels():
     " TODO https://stackoverflow.com/questions/43196636/how-to-concatenate-two-layers-in-keras"
     from keras.models import Sequential, Model
@@ -117,7 +163,7 @@ def concat_channels():
     model.compile(optimizer=ada_grad, loss='binary_crossentropy',
                 metrics=['accuracy'])
 
-test_path = '/home/justin/Dropbox/Fevens Lab/FNAB_raw/test'
+test_path = '/home/justin/Dropbox/Fevens Lab/FNAB_raw/'
 height, width = 224, 224
 
 prepare_datasets(test_path, height, width)
