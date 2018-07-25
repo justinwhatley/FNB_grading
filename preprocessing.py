@@ -164,17 +164,15 @@ def bin_files(file_list, number_of_bins, separate_by_patient = True):
                     break
             patient_set.remove(patient_id)
 
-
-    for bin in bins:
-        print(len(bin))
-                                    
-            # smallest_bin
-
-        # Remove these files from the original list
         # Trim the bins to have the same number of files
-        pass
+        # TODO - perhaps cap at an even number like 4000? Evenly distribute removals between patients?
+
+    # Size verification
+    for bin in bins:
+        print(len(bin))              
     
     else:
+        # TODO not implemented
         pass
         # Randomly select from the list of files add it to the smallest bin
         # Remove these files from the original list
