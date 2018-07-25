@@ -135,34 +135,131 @@ def get_subdirectories(directory_path):
     return [os.path.join(directory_path, name) for name in os.listdir(directory_path)
             if os.path.isdir(os.path.join(directory_path, name))]
 
-def bin_files(number_of_bins, files, separate_by_patient = True):
-    bins = []
+def get_patients(file_list):
+    return set([name.split('-')[0] for name in file_list])
+
+def get_images_from_patient(file_list, patient_id):
+    return [name for name in file_list if name.split('-')[0] == patient_id]
+
+
+def bin_files(file_list, number_of_bins, separate_by_patient = True):
+    import random
+    bins = [[] for i in range(number_of_bins)]
+
+    if separate_by_patient:
+        patient_set = get_patients(file_list)
+        print(len(patient_set))
+
+        # Randomly select from the list of possible patients, add these to the smallest bin
+        while patient_set:
+            patient_id = random.sample(patient_set, 1)[0]
+            print(patient_id)
+            smallest_bin_size = min(map(len, bins))
+            for bin in bins:
+                # Add all files from a given patient to the smallest fold
+                if len(bin) == smallest_bin_size:
+                    images_from_patient = get_images_from_patient(file_list, patient_id)   
+                    for image in images_from_patient:
+                        bin.append(image)
+                    break
+            patient_set.remove(patient_id)
+
+
+    for bin in bins:
+        print(len(bin))
+                                    
+            # smallest_bin
+
+        # Remove these files from the original list
+        # Trim the bins to have the same number of files
+        pass
+    
+    else:
+        pass
+        # Randomly select from the list of files add it to the smallest bin
+        # Remove these files from the original list
+        # Trim the bins to have the same number of files
 
     return bins
 
-def get_approximate_ratio(fold = .2):
+def select_folds(file_list, number_of_folds = 5):
     """
     Separates the files randomly into different directories while ensuring individual patients do not fall into 
     both the training and validation sets
     """
-    number_of_bins = 1 / fold
-    pass
+    bins = bin_files(file_list, number_of_folds, separate_by_patient = True)
+    
+    # TODO look into whether this is the correct strategy
+    # Assign files in each bin to the training/validation sets
 
-def create_training_and_validation_dir(path):
+    # Returns a list of lists containing the different bins set
+    return
+
+def create_training_and_validation_dir(path, class_keyword_1, class_keyword_2):
     # Iterates through image datasets
     training_set = 'train'
     training_directory = os.path.join(path, training_set)
     mkdir(training_directory)
+    MG2_directory = os.path.join(training_directory, class_keyword_1) 
+    mkdir(MG2_directory)
+    MG3_directory = os.path.join(training_directory, class_keyword_2) 
+    mkdir(MG3_directory)
 
     validation_set = 'validation'
     validation_directory = os.path.join(validation_set)
     mkdir(validation_directory)
+    MG2_directory = os.path.join(validation_directory, class_keyword_1) 
+    mkdir(MG2_directory)
+    MG3_directory = os.path.join(validation_directory, class_keyword_2) 
+    mkdir(MG3_directory)
+
+def prepare_training_and_validation(preprocessed_directory, class_keyword_1, class_keyword_2):
+    """
+
+    """
+    create_training_and_validation_dir(preprocessed_directory, class_keyword_1, class_keyword_2)
+    
+    class_1_dir = os.path.join(preprocessed_directory, class_keyword_1)
+    class_2_dir = os.path.join(preprocessed_directory, class_keyword_2)
+    
+    # Loads filelists
+    class_1_filelist = sorted([f for f in os.listdir(class_1_dir) if os.path.isfile(os.path.join(class_1_dir, f))])
+    class_2_filelist = sorted([f for f in os.listdir(class_2_dir) if os.path.isfile(os.path.join(class_2_dir, f))])
+
+    MG2_count = len(class_1_filelist)
+    print(MG2_count)
+    MG3_count = len(class_2_filelist)
+    print(MG3_count)
+
+    select_folds(class_1_filelist)
+
+    # Get the patient and part number ensuring that all files of an individual patient are in the same bin
+
+def preprocess_images(preprocessed_directory, MG2, MG3):
+    """
+    """
+
+    # TODO consider the change in pixel density and how this might change the interpretation by the model when not put to the same scale
+    # Splits the images and distributes the split image files into preprocessed MG2 and MG3 directories     
+
+    MG2_directory = os.path.join(preprocessed_directory, 'MG2') 
+    mkdir(MG2_directory)
+    for dir in MG2:
+        split_images(dir, MG2_directory, height, width)  
+    
+    MG3_directory = os.path.join(preprocessed_directory, 'MG3') 
+    mkdir(MG3_directory)
+    for dir in MG3:
+        split_images(dir, MG3_directory, height, width)  
 
 def prepare_datasets(path, height, width):
     """ 
     Prepares training and validation sets
     """
     print('Loading path: ' + path)
+
+    class_keyword_1 = 'MG2'
+    class_keyword_2 = 'MG3'
 
     # Initializes the preprocessed directory
     preprocessed_data = 'preprocessed'
@@ -178,26 +275,14 @@ def prepare_datasets(path, height, width):
             continue
         class_dirs = get_subdirectories(dataset_subdir)
         for class_dir in class_dirs:
-            if class_dir.split('/')[-1] == 'MG2':
+            if class_dir.split('/')[-1] == class_keyword_1:
                 MG2.append(class_dir)
-            if class_dir.split('/')[-1] == 'MG3':
+            if class_dir.split('/')[-1] == class_keyword_2:
                 MG3.append(class_dir)
 
-    # TODO consider the change in pixel density and how this might change the interpretation by the model when not put to the same scale
-    # Splits the images and distributes the split image files into preprocessed MG2 and MG3 directories      
-    
-    MG2_directory = os.path.join(preprocessed_directory, 'MG2') 
-    mkdir(MG2_directory)
-    for dir in MG2:
-        split_images(dir, MG2_directory, height, width)  
-    
-    MG3_directory = os.path.join(preprocessed_directory, 'MG3') 
-    mkdir(MG3_directory)
-    for dir in MG3:
-        split_images(dir, MG3_directory, height, width)  
- 
-    # create_training_and_validation_dir(preprocessed_directory)
+    # preprocess_images(preprocessed_directory, MG2, MG3)
 
+    prepare_training_and_validation(preprocessed_directory, class_keyword_1, class_keyword_2)
 
 
 def concat_channels():
