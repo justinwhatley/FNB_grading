@@ -141,8 +141,26 @@ def get_patients(file_list):
 def get_images_from_patient(file_list, patient_id):
     return [name for name in file_list if name.split('-')[0] == patient_id]
 
+def trim_bins(bins, bin_size, evenly = False):
+    import random
 
-def bin_files(file_list, number_of_bins, separate_by_patient = True):
+    # If bin size is not set, set it to the smallest bin size
+    if not bin_size:
+        bin_size = min(map(len, bins))
+        # Note: Bin sizes must also be suitable for matrix multiplications
+    
+    if not evenly:
+        # Randomly samples from the bins, removing samples until the size matches the desire bin_size
+        for bin in bins:   
+            print('Bin size: ' + str(len(bin)))
+            while len(bin) > bin_size:
+                sample = random.sample(bin, 1)[0]
+                bin.remove(sample)
+
+    return bins
+
+
+def bin_files(file_list, number_of_bins, bin_size, separate_by_patient = True):
     import random
     bins = [[] for i in range(number_of_bins)]
 
@@ -153,7 +171,7 @@ def bin_files(file_list, number_of_bins, separate_by_patient = True):
         # Randomly select from the list of possible patients, add these to the smallest bin
         while patient_set:
             patient_id = random.sample(patient_set, 1)[0]
-            print(patient_id)
+            # print(patient_id)
             smallest_bin_size = min(map(len, bins))
             for bin in bins:
                 # Add all files from a given patient to the smallest fold
@@ -163,7 +181,7 @@ def bin_files(file_list, number_of_bins, separate_by_patient = True):
                         bin.append(image)
                     break
             patient_set.remove(patient_id)
-
+        trim_bins(bins, bin_size)
         # Trim the bins to have the same number of files
         # TODO - perhaps cap at an even number like 4000? Evenly distribute removals between patients?
 
@@ -180,18 +198,19 @@ def bin_files(file_list, number_of_bins, separate_by_patient = True):
 
     return bins
 
-def select_folds(file_list, number_of_folds = 5):
+def select_folds(file_list, fold_size, number_of_folds = 5):
     """
     Separates the files randomly into different directories while ensuring individual patients do not fall into 
     both the training and validation sets
     """
-    bins = bin_files(file_list, number_of_folds, separate_by_patient = True)
-    
+    bin_size = fold_size
+    bins = bin_files(file_list, number_of_folds, bin_size, separate_by_patient = True)
+    return bins
     # TODO look into whether this is the correct strategy
     # Assign files in each bin to the training/validation sets
 
     # Returns a list of lists containing the different bins set
-    return
+
 
 def create_training_and_validation_dir(path, class_keyword_1, class_keyword_2):
     # Iterates through image datasets
@@ -204,7 +223,7 @@ def create_training_and_validation_dir(path, class_keyword_1, class_keyword_2):
     mkdir(MG3_directory)
 
     validation_set = 'validation'
-    validation_directory = os.path.join(validation_set)
+    validation_directory = os.path.join(path, validation_set)
     mkdir(validation_directory)
     MG2_directory = os.path.join(validation_directory, class_keyword_1) 
     mkdir(MG2_directory)
@@ -229,7 +248,8 @@ def prepare_training_and_validation(preprocessed_directory, class_keyword_1, cla
     MG3_count = len(class_2_filelist)
     print(MG3_count)
 
-    select_folds(class_1_filelist)
+    class_1_folds = select_folds(class_1_filelist, 4000)
+    class_2_folds = select_folds(class_2_filelist, 700)
 
     # Get the patient and part number ensuring that all files of an individual patient are in the same bin
 
