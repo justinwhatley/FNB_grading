@@ -251,7 +251,7 @@ def prepare_training_and_validation(preprocessed_directory, class_keyword_1, cla
     class_1_folds = select_folds(class_1_filelist, 4000)
     class_2_folds = select_folds(class_2_filelist, 700)
 
-    # Get the patient and part number ensuring that all files of an individual patient are in the same bin
+    
 
 def preprocess_images(preprocessed_directory, MG2, MG3):
     """
@@ -302,6 +302,27 @@ def prepare_datasets(path, height, width):
 
     prepare_training_and_validation(preprocessed_directory, class_keyword_1, class_keyword_2)
 
+def k_fold_validation(k):
+    k = 5
+    l = int(len(X) / k)
+    mse_total, mae_total = 0, 0
+    for i in range(k):
+        test_x = X[i*l:(i+1)*l]
+        test_y = Y[i*l:(i+1)*l]
+
+        train_x = np.concatenate([X[:i*l], X[(i+1)*l:]])
+        train_y = np.concatenate([Y[:i*l], Y[(i+1)*l:]])
+
+        model.fit(train_x, train_y, epochs=15)
+
+        predictions = model.predict(test_x)
+        mse, mae = model.evaluate(test_x, test_y)
+        mse_total += mse
+        mae_total += mae
+
+    mse_avg = mse_total / k
+    mae_avg = mae_total / k
+    print(mse_avg, mae_avg)
 
 def concat_channels():
     " TODO https://stackoverflow.com/questions/43196636/how-to-concatenate-two-layers-in-keras"
