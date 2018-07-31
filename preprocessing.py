@@ -252,28 +252,25 @@ def prepare_data_by_class(preprocessed_directory, class_keyword_1, class_keyword
 
     class_list = [class_1_folds, class_2_folds]
     return class_list
-    
 
-    
-
-def preprocess_images(preprocessed_directory, MG2, MG3):
+def make_image_patches(preprocessed_directory, class_keyword_1, class_file_list_1, class_keyword_2, class_file_list_2):
     """
+    Splits the images into patches and distributes these into a directory of that class
     """
+    
+    patch_directory_name = 'patched_data'
 
-    # TODO consider the change in pixel density and how this might change the interpretation by the model when not put to the same scale
-    # Splits the images and distributes the split image files into preprocessed MG2 and MG3 directories     
-
-    MG2_directory = os.path.join(preprocessed_directory, 'MG2') 
+    MG2_directory = os.path.join(preprocessed_directory, patch_directory_name, class_keyword_1) 
     mkdir(MG2_directory)
-    for dir in MG2:
+    for dir in class_file_list_1:
         split_images(dir, MG2_directory, height, width)  
     
-    MG3_directory = os.path.join(preprocessed_directory, 'MG3') 
+    MG3_directory = os.path.join(preprocessed_directory, patch_directory_name, class_keyword_2) 
     mkdir(MG3_directory)
-    for dir in MG3:
+    for dir in class_file_list_2:
         split_images(dir, MG3_directory, height, width)  
 
-def prepare_datasets(path, height, width):
+def prepare_datasets(path, height, width, overwrite_previous_preprocessed_data = False):
     """ 
     Prepares training and validation sets
     """
@@ -281,6 +278,7 @@ def prepare_datasets(path, height, width):
 
     class_keyword_1 = 'MG2'
     class_keyword_2 = 'MG3'
+    classes_list = [class_keyword_1, class_keyword_2]
 
     # Initializes the preprocessed directory
     preprocessed_data = 'preprocessed'
@@ -288,34 +286,31 @@ def prepare_datasets(path, height, width):
     mkdir(preprocessed_directory)
 
     # Gets the file paths for different classes
-    MG2 = []
-    MG3 = []
+    class_files_list = [[] for i in range(len(classes_list))]
     dataset_subdirs = get_subdirectories(path) 
     for dataset_subdir in dataset_subdirs:
+        # Skipts preprocessed data path
         if dataset_subdir.split('/')[-1] == preprocessed_data:
             continue
         class_dirs = get_subdirectories(dataset_subdir)
         for class_dir in class_dirs:
-            if class_dir.split('/')[-1] == class_keyword_1:
-                MG2.append(class_dir)
-            if class_dir.split('/')[-1] == class_keyword_2:
-                MG3.append(class_dir)
+            directory_name = class_dir.split('/')[-1]
+            # Gets the index associated to the class which was found in the directory names (assumes only one of any specifed class_keyword)
+            index = [i for i, s in enumerate(classes_list) if directory_name in s][0]
+            # Addes the directory name to the list
+            class_files_list[index].append(class_dir)
 
-    # preprocess_images(preprocessed_directory, MG2, MG3)
+    print(class_files_list)
+    exit(0)
 
-    class_list = prepare_data_by_class(preprocessed_directory, class_keyword_1, class_keyword_2)
-    # TODO move loop to testing function where it'll make more sense
-    for _class in class_list:
-        for i, fold in enumerate(_class)
-            validation_fold = i
-            # Move the list of selected files to a training and validation folders
-            assign_folds_to_training_and_validation(validation_fold, _class)
-            # Run training, validation while keeping average
-            model = train()
-            model_score = validate()
-            
-            remove_test_files()
-            # remove_files
+    if overwrite_previous_preprocessed_data:
+        # Creates patches and distributes the split image files into preprocessed MG2 and MG3 directories     
+        # TODO consider the change in pixel density and how this might change the interpretation by the model when not put to the same scale
+        make_image_patches(preprocessed_directory, class_keyword_1, class_file_list_1, class_keyword_2, class_file_list_2)
+
+    class_file_list = prepare_data_by_class(preprocessed_directory, class_keyword_1, class_keyword_2)
+    return class_file_list
+ 
 
 def assign_folds_to_training_and_validation(validation_bin_int, bins):
     # Make record file of the files that were assigned to the folds
@@ -324,50 +319,6 @@ def assign_folds_to_training_and_validation(validation_bin_int, bins):
     # Copy files to validation directory
     pass
 
-
-
-def k_fold_validation(k):
-    k = 5
-    l = int(len(X) / k)
-    mse_total, mae_total = 0, 0
-    for i in range(k):
-        test_x = X[i*l:(i+1)*l]
-        test_y = Y[i*l:(i+1)*l]
-
-        train_x = np.concatenate([X[:i*l], X[(i+1)*l:]])
-        train_y = np.concatenate([Y[:i*l], Y[(i+1)*l:]])
-
-        model.fit(train_x, train_y, epochs=15)
-
-        predictions = model.predict(test_x)
-        mse, mae = model.evaluate(test_x, test_y)
-        mse_total += mse
-        mae_total += mae
-
-    mse_avg = mse_total / k
-    mae_avg = mae_total / k
-    print(mse_avg, mae_avg)
-
-def concat_channels():
-    " TODO https://stackoverflow.com/questions/43196636/how-to-concatenate-two-layers-in-keras"
-    from keras.models import Sequential, Model
-    from keras.layers import Concatenate, Dense, LSTM, Input, concatenate
-    from keras.optimizers import Adagrad
-
-    first_input = Input(shape=(2, ))
-    first_dense = Dense(1, )(first_input)
-
-    second_input = Input(shape=(2, ))
-    second_dense = Dense(1, )(second_input)
-
-    merge_one = concatenate([first_dense, second_dense])
-
-    third_input = Input(shape=(1, ))
-    merge_two = concatenate([merge_one, third_input])
-
-    model = Model(inputs=[first_input, second_input, third_input], outputs=merge_two)
-    model.compile(optimizer=ada_grad, loss='binary_crossentropy',
-                metrics=['accuracy'])
 
 if __name__ == "__main__":
     # Linux path

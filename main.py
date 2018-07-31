@@ -119,26 +119,73 @@ def remove_training_validation_files(directory):
 
 
 
+# def k_fold_validation(k):
+#     # TODO modify this to append only
+#     k = 5
+#     l = int(len(X) / k)
+#     mse_total, mae_total = 0, 0
+#     for i in range(k):
+#         test_x = X[i*l:(i+1)*l]
+#         test_y = Y[i*l:(i+1)*l]
+
+#         train_x = np.concatenate([X[:i*l], X[(i+1)*l:]])
+#         train_y = np.concatenate([Y[:i*l], Y[(i+1)*l:]])
+
+#         model.fit(train_x, train_y, epochs=15)
+
+#         predictions = model.predict(test_x)
+#         mse, mae = model.evaluate(test_x, test_y)
+#         mse_total += mse
+#         mae_total += mae
+
+#     mse_avg = mse_total / k
+#     mae_avg = mae_total / k
+#     print(mse_avg, mae_avg)
+
+def concat_channels():
+    " TODO https://stackoverflow.com/questions/43196636/how-to-concatenate-two-layers-in-keras"
+    from keras.models import Sequential, Model
+    from keras.layers import Concatenate, Dense, LSTM, Input, concatenate
+    from keras.optimizers import Adagrad
+
+    first_input = Input(shape=(2, ))
+    first_dense = Dense(1, )(first_input)
+
+    second_input = Input(shape=(2, ))
+    second_dense = Dense(1, )(second_input)
+
+    merge_one = concatenate([first_dense, second_dense])
+
+    third_input = Input(shape=(1, ))
+    merge_two = concatenate([merge_one, third_input])
+
+    model = Model(inputs=[first_input, second_input, third_input], outputs=merge_two)
+    model.compile(optimizer=ada_grad, loss='binary_crossentropy',
+                metrics=['accuracy'])
+
+
+
 if __name__ == "__main__":
 
-    raw_data_directory_name = FNAB_raw
-    raw_data_directory_path = get_path('mac', FNAB_raw)
-    # raw_data_directory_path = get_path('linux', FNAB_raw)
+    raw_data_directory_name = 'FNAB_raw'
+    raw_data_directory_path = get_path('mac', raw_data_directory_name)
+    # raw_data_directory_path = get_path('linux', raw_data_directory_name)
 
     # Prepares data
     height, width = 224, 224
-    file_lists_by_class = preprocessing.prepare_datasets(raw_data_path, height, width)
+    file_lists_by_class = preprocessing.prepare_datasets(raw_data_directory_path, height, width)
 
-    preprocessed_path = os.path.join(mac_data_path, ' ')
+    preprocessed_path = os.path.join(raw_data_directory_path, ' ')
 
-    for _class in file_lists_by_class:
-        for i, fold in enumerate(_class)
-            validation_fold = i
-            # Move the list of selected files to a training and validation folders
-            preprocessing.assign_folds_to_training_and_validation(validation_fold, _class)
-            # Run training, validation while keeping average
-            model = train()
-            model_score = validate()
+    # Iterates through folds
+    # for _class in file_lists_by_class:
+    #     for i, fold in enumerate(_class)
+    #         validation_fold = i
+    #         # Move the list of selected files to a training and validation folders
+    #         preprocessing.assign_folds_to_training_and_validation(validation_fold, _class)
+    #         # Run training, validation while keeping average
+    #         model = train()
+    #         model_score = validate()
             
-            remove_test_files()
-            # remove_files
+    #         remove_test_files()
+    #         # remove_files
