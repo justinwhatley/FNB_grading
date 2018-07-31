@@ -253,28 +253,24 @@ def prepare_data_by_class(preprocessed_directory, class_keyword_1, class_keyword
     class_list = [class_1_folds, class_2_folds]
     return class_list
 
-def make_image_patches(preprocessed_directory, class_keyword_1, class_file_list_1, class_keyword_2, class_file_list_2):
+def make_image_patches(preprocessed_directory, class_keyword, class_file_list, height, width):
     """
     Splits the images into patches and distributes these into a directory of that class
     """
     
     patch_directory_name = 'patched_data'
 
-    MG2_directory = os.path.join(preprocessed_directory, patch_directory_name, class_keyword_1) 
-    mkdir(MG2_directory)
-    for dir in class_file_list_1:
-        split_images(dir, MG2_directory, height, width)  
-    
-    MG3_directory = os.path.join(preprocessed_directory, patch_directory_name, class_keyword_2) 
-    mkdir(MG3_directory)
-    for dir in class_file_list_2:
-        split_images(dir, MG3_directory, height, width)  
+    directory = os.path.join(preprocessed_directory, patch_directory_name, class_keyword) 
+    mkdir(directory)
+    for dir in class_file_list:
+        split_images(dir, directory, height, width)  
 
 def prepare_datasets(path, height, width, overwrite_previous_preprocessed_data = False):
     """ 
     Prepares training and validation sets
     """
     print('Loading path: ' + path)
+    overwrite_previous_preprocessed_data = True
 
     class_keyword_1 = 'MG2'
     class_keyword_2 = 'MG3'
@@ -282,8 +278,6 @@ def prepare_datasets(path, height, width, overwrite_previous_preprocessed_data =
 
     # Initializes the preprocessed directory
     preprocessed_data = 'preprocessed'
-    preprocessed_directory = os.path.join(path, preprocessed_data)
-    mkdir(preprocessed_directory)
 
     # Gets the file paths for different classes
     class_files_list = [[] for i in range(len(classes_list))]
@@ -300,16 +294,28 @@ def prepare_datasets(path, height, width, overwrite_previous_preprocessed_data =
             # Addes the directory name to the list
             class_files_list[index].append(class_dir)
 
-    print(class_files_list)
-    exit(0)
+    # Check if the preprocessed directory is empty
+    preprocessed_directory = os.path.join(path, preprocessed_data)
+    empty_directory = False
+    if [f for f in os.listdir(preprocessed_directory) if not f.startswith('.')] == []:
+        empty_directory = True
 
-    if overwrite_previous_preprocessed_data:
-        # Creates patches and distributes the split image files into preprocessed MG2 and MG3 directories     
+    # Prepare preprocessed directory
+    if empty_directory:
+        mkdir(preprocessed_directory)
+        for i, class_keyword in enumerate(classes_list):
+            make_image_patches(preprocessed_directory, class_keyword, class_files_list[i], height, width)
+    # Remove old preprocessed directory and prepare a new one
+    elif not empty_directory and overwrite_previous_preprocessed_data:
+        from shutil import rmtree
+        rmtree(preprocessed_directory)
         # TODO consider the change in pixel density and how this might change the interpretation by the model when not put to the same scale
-        make_image_patches(preprocessed_directory, class_keyword_1, class_file_list_1, class_keyword_2, class_file_list_2)
+        for i, class_keyword in enumerate(classes_list):
+            make_image_patches(preprocessed_directory, class_keyword, class_files_list[i], height, width)
 
+        
     class_file_list = prepare_data_by_class(preprocessed_directory, class_keyword_1, class_keyword_2)
-    return class_file_list
+    return class_file_list 
  
 
 def assign_folds_to_training_and_validation(validation_bin_int, bins):
