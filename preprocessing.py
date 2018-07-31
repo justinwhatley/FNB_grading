@@ -159,7 +159,6 @@ def trim_bins(bins, bin_size, evenly = False):
 
     return bins
 
-
 def bin_files(file_list, number_of_bins, bin_size, separate_by_patient = True):
     import random
     bins = [[] for i in range(number_of_bins)]
@@ -230,7 +229,7 @@ def create_training_and_validation_dir(path, class_keyword_1, class_keyword_2):
     MG3_directory = os.path.join(validation_directory, class_keyword_2) 
     mkdir(MG3_directory)
 
-def prepare_training_and_validation(preprocessed_directory, class_keyword_1, class_keyword_2):
+def prepare_data_by_class(preprocessed_directory, class_keyword_1, class_keyword_2):
     """
 
     """
@@ -250,6 +249,10 @@ def prepare_training_and_validation(preprocessed_directory, class_keyword_1, cla
 
     class_1_folds = select_folds(class_1_filelist, 4000)
     class_2_folds = select_folds(class_2_filelist, 700)
+
+    class_list = [class_1_folds, class_2_folds]
+    return class_list
+    
 
     
 
@@ -300,7 +303,28 @@ def prepare_datasets(path, height, width):
 
     # preprocess_images(preprocessed_directory, MG2, MG3)
 
-    prepare_training_and_validation(preprocessed_directory, class_keyword_1, class_keyword_2)
+    class_list = prepare_data_by_class(preprocessed_directory, class_keyword_1, class_keyword_2)
+    # TODO move loop to testing function where it'll make more sense
+    for _class in class_list:
+        for i, fold in enumerate(_class)
+            validation_fold = i
+            # Move the list of selected files to a training and validation folders
+            assign_folds_to_training_and_validation(validation_fold, _class)
+            # Run training, validation while keeping average
+            model = train()
+            model_score = validate()
+            
+            remove_test_files()
+            # remove_files
+
+def assign_folds_to_training_and_validation(validation_bin_int, bins):
+    # Make record file of the files that were assigned to the folds
+    # Copy files to training directory
+
+    # Copy files to validation directory
+    pass
+
+
 
 def k_fold_validation(k):
     k = 5
