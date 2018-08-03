@@ -171,11 +171,25 @@ if __name__ == "__main__":
     raw_data_directory_path = get_path('mac', raw_data_directory_name)
     # raw_data_directory_path = get_path('linux', raw_data_directory_name)
 
+    preprocessed_directory_path = os.path.join(os.path.dirname(raw_data_directory_path), 'FNAB_preprocessed')
+
+    class_keyword_1 = 'MG2'
+    class_keyword_2 = 'MG3'
+    classes_list = [class_keyword_1, class_keyword_2]
+
     # Prepares data
     height, width = 224, 224
-    file_lists_by_class = preprocessing.prepare_datasets(raw_data_directory_path, height, width)
+    file_lists_by_class = preprocessing.prepare_datasets(raw_data_directory_path, preprocessed_directory_path, height, width, classes_list)
+    print(file_lists_by_class)
+    exit(0)
 
-    preprocessed_path = os.path.join(raw_data_directory_path, ' ')
+
+    preprocessed_path = os.path.join(raw_data_directory_path, 'preprocessed')
+
+    # Creates the training and validation directories if they do not exist
+    preprocessing.create_training_and_validation_dir(preprocessed_path, 'MG2', 'MG3')
+
+
 
     # Iterates through folds
     # for _class in file_lists_by_class:

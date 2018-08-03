@@ -159,58 +159,6 @@ def trim_bins(bins, bin_size, evenly = False):
 
     return bins
 
-def bin_files(file_list, number_of_bins, bin_size, separate_by_patient = True):
-    import random
-    bins = [[] for i in range(number_of_bins)]
-
-    if separate_by_patient:
-        patient_set = get_patients(file_list)
-        print(len(patient_set))
-
-        # Randomly select from the list of possible patients, add these to the smallest bin
-        while patient_set:
-            patient_id = random.sample(patient_set, 1)[0]
-            # print(patient_id)
-            smallest_bin_size = min(map(len, bins))
-            for bin in bins:
-                # Add all files from a given patient to the smallest fold
-                if len(bin) == smallest_bin_size:
-                    images_from_patient = get_images_from_patient(file_list, patient_id)   
-                    for image in images_from_patient:
-                        bin.append(image)
-                    break
-            patient_set.remove(patient_id)
-        trim_bins(bins, bin_size)
-        # Trim the bins to have the same number of files
-        # TODO - perhaps cap at an even number like 4000? Evenly distribute removals between patients?
-
-    # Size verification
-    for bin in bins:
-        print(len(bin))              
-    
-    else:
-        # TODO not implemented
-        pass
-        # Randomly select from the list of files add it to the smallest bin
-        # Remove these files from the original list
-        # Trim the bins to have the same number of files
-
-    return bins
-
-def select_folds(file_list, fold_size, number_of_folds = 5):
-    """
-    Separates the files randomly into different directories while ensuring individual patients do not fall into 
-    both the training and validation sets
-    """
-    bin_size = fold_size
-    bins = bin_files(file_list, number_of_folds, bin_size, separate_by_patient = True)
-    return bins
-    # TODO look into whether this is the correct strategy
-    # Assign files in each bin to the training/validation sets
-
-    # Returns a list of lists containing the different bins set
-
-
 def create_training_and_validation_dir(path, class_keyword_1, class_keyword_2):
     # Iterates through image datasets
     training_set = 'train'
@@ -229,92 +177,164 @@ def create_training_and_validation_dir(path, class_keyword_1, class_keyword_2):
     MG3_directory = os.path.join(validation_directory, class_keyword_2) 
     mkdir(MG3_directory)
 
-def prepare_data_by_class(preprocessed_directory, class_keyword_1, class_keyword_2):
-    """
 
+def bin_files(file_list, number_of_bins, separate_by_patient = True):
     """
-    create_training_and_validation_dir(preprocessed_directory, class_keyword_1, class_keyword_2)
+    Separates the files randomly into different directories while ensuring individual patients do not fall into 
+    both the training and validation sets
+    """
+    import random
+    bins = [[] for i in range(number_of_bins)]
+
+    # Simple assignment of files from each patient to bin with the fewest slides
+    if separate_by_patient:
+        patient_set = get_patients(file_list)
+        print(len(patient_set))
+
+        # Randomly select from the list of possible patients, add these to the smallest bin
+        while patient_set:
+            patient_id = random.sample(patient_set, 1)[0]
+            # print(patient_id)
+            smallest_bin_size = min(map(len, bins))
+            for bin in bins:
+                # Add all files from a given patient to the smallest fold
+                if len(bin) == smallest_bin_size:
+                    images_from_patient = get_images_from_patient(file_list, patient_id)   
+                    for image in images_from_patient:
+                        bin.append(image)
+                    break
+            patient_set.remove(patient_id)          
     
-    class_1_dir = os.path.join(preprocessed_directory, class_keyword_1)
-    class_2_dir = os.path.join(preprocessed_directory, class_keyword_2)
+    else:
+        # TODO not implemented
+        pass
+        # Randomly select from the list of files add it to the smallest bin
+        # Remove these files from the original list
+        # Trim the bins to have the same number of files
+
+    return bins
+
+# def select_folds(file_list, fold_size, number_of_folds = 5):
+#     """
+#     Separates the files randomly into different directories while ensuring individual patients do not fall into 
+#     both the training and validation sets
+#     """
+#     bin_size = fold_size
+#     bins = bin_files(file_list, number_of_folds, bin_size, separate_by_patient = True)
+#     return bins
+#     # TODO look into whether this is the correct strategy
+#     # Assign files in each bin to the training/validation sets
+
+#     # Returns a list of lists containing the different bins set
+
+def get_data_by_class(preprocessed_directory, classes_list):
+    """
+    Note: Currently harcoded to take only two classes and 
+    """
+ 
+    class_1_dir = os.path.join(preprocessed_directory, classes_list[0])
+    class_2_dir = os.path.join(preprocessed_directory, classes_list[1])
     
     # Loads filelists
     class_1_filelist = sorted([f for f in os.listdir(class_1_dir) if os.path.isfile(os.path.join(class_1_dir, f))])
     class_2_filelist = sorted([f for f in os.listdir(class_2_dir) if os.path.isfile(os.path.join(class_2_dir, f))])
 
-    MG2_count = len(class_1_filelist)
-    print(MG2_count)
-    MG3_count = len(class_2_filelist)
-    print(MG3_count)
-
-    class_1_folds = select_folds(class_1_filelist, 4000)
-    class_2_folds = select_folds(class_2_filelist, 700)
-
-    class_list = [class_1_folds, class_2_folds]
+    class_list = [class_1_filelist, class_2_filelist]
     return class_list
 
-def make_image_patches(preprocessed_directory, class_keyword, class_file_list, height, width):
+def copy_original_data_by_class(preprocessed_directory, subdirectory, class_keyword, raw_data_directory_list):
+    """
+    Copies the original to the preprocessed data from raw directory
+    """
+    from distutils.dir_util import copy_tree
+    for original_directory in raw_data_directory_list:
+        copy_tree(original_directory, os.path.join(preprocessed_directory, subdirectory, class_keyword))
+
+def make_image_patches(preprocessed_directory, subdirectory, class_keyword, class_file_list, height, width):
     """
     Splits the images into patches and distributes these into a directory of that class
     """
     
-    patch_directory_name = 'patched_data'
+    patch_directory_name = subdirectory
 
     directory = os.path.join(preprocessed_directory, patch_directory_name, class_keyword) 
     mkdir(directory)
     for dir in class_file_list:
         split_images(dir, directory, height, width)  
 
-def prepare_datasets(path, height, width, overwrite_previous_preprocessed_data = False):
+def prepare_datasets(raw_data_path, preprocessed_directory_path, height, width, classes_list, overwrite_previous_preprocessed_data = False):
     """ 
     Prepares training and validation sets
     """
-    print('Loading path: ' + path)
-    overwrite_previous_preprocessed_data = True
-
-    class_keyword_1 = 'MG2'
-    class_keyword_2 = 'MG3'
-    classes_list = [class_keyword_1, class_keyword_2]
-
-    # Initializes the preprocessed directory
-    preprocessed_data = 'preprocessed'
+    print('Loading raw data from path: ' + raw_data_path)
 
     # Gets the file paths for different classes
     class_files_list = [[] for i in range(len(classes_list))]
-    dataset_subdirs = get_subdirectories(path) 
+    dataset_subdirs = get_subdirectories(raw_data_path) 
     for dataset_subdir in dataset_subdirs:
-        # Skipts preprocessed data path
-        if dataset_subdir.split('/')[-1] == preprocessed_data:
-            continue
+
         class_dirs = get_subdirectories(dataset_subdir)
         for class_dir in class_dirs:
             directory_name = class_dir.split('/')[-1]
             # Gets the index associated to the class which was found in the directory names (assumes only one of any specifed class_keyword)
-            index = [i for i, s in enumerate(classes_list) if directory_name in s][0]
-            # Addes the directory name to the list
+            index_list = [i for i, s in enumerate(classes_list) if directory_name in s]
+            index = index_list[0]
+            # Addes the directory name for files of a given class to the list
             class_files_list[index].append(class_dir)
 
     # Check if the preprocessed directory is empty
-    preprocessed_directory = os.path.join(path, preprocessed_data)
     empty_directory = False
-    if [f for f in os.listdir(preprocessed_directory) if not f.startswith('.')] == []:
+    mkdir(preprocessed_directory_path)
+    if [f for f in os.listdir(preprocessed_directory_path) if not f.startswith('.')] == []:
         empty_directory = True
 
     # Prepare preprocessed directory
     if empty_directory:
-        mkdir(preprocessed_directory)
+        print('Creating preprocessed directory: ' + preprocessed_directory_path)
         for i, class_keyword in enumerate(classes_list):
-            make_image_patches(preprocessed_directory, class_keyword, class_files_list[i], height, width)
+            # Adding preprocessed patches
+            make_image_patches(preprocessed_directory_path, 'patched_data', class_keyword, class_files_list[i], height, width)
+            # Copying raw data to preprocessed directory
+            copy_original_data_by_class(preprocessed_directory_path, 'original_data', class_keyword, class_files_list[i])
+
     # Remove old preprocessed directory and prepare a new one
     elif not empty_directory and overwrite_previous_preprocessed_data:
         from shutil import rmtree
-        rmtree(preprocessed_directory)
+        print('Removing old preprocessed directory...')
+        rmtree(preprocessed_directory_path)
+        print('Creating preprocessed directory: ' + preprocessed_directory_path)
         # TODO consider the change in pixel density and how this might change the interpretation by the model when not put to the same scale
         for i, class_keyword in enumerate(classes_list):
-            make_image_patches(preprocessed_directory, class_keyword, class_files_list[i], height, width)
+            # Adding preprocessed patches
+            make_image_patches(preprocessed_directory_path, 'patched_data', class_keyword, class_files_list[i], height, width)
+            # Copying raw data to preprocessed directory
+            copy_original_data_by_class(preprocessed_directory_path, 'original_data', class_keyword, class_files_list[i])
 
-        
-    class_file_list = prepare_data_by_class(preprocessed_directory, class_keyword_1, class_keyword_2)
+    # Gets patch file data
+    patched_class_file_list = get_data_by_class(os.path.join(preprocessed_directory_path, 'patched_data'), classes_list)
+    
+    # Bins the data into k folds
+    binned_class_file_list = []
+    number_of_folds = 5
+    for class_files_list in patched_class_file_list:
+        binned_class_file_list.append(bin_files(class_files_list, number_of_folds))
+    
+    # Trims the data assignment to create folds of equal size
+    file_limit_per_fold =  [4000, 700]
+    for i, binned_file_list in enumerate(binned_class_file_list): 
+        binned_file_list = trim_bins(binned_file_list, file_limit_per_fold[i])
+        print(len(binned_file_list[0]))        
+
+    
+    
+    print(patched_class_file_list)
+    
+    # print()
+    # print('TESTING')
+    # class_file_list = prepare_data_by_class(os.path.join(preprocessed_directory, 'original_data', classes_list))
+    # print(class_file_list)
+
+    exit(0)
     return class_file_list 
  
 
@@ -335,4 +355,8 @@ if __name__ == "__main__":
 
     height, width = 224, 224
 
-    prepare_datasets(test_path, height, width)
+    class_keyword_1 = 'MG2'
+    class_keyword_2 = 'MG3'
+    classes_list = [class_keyword_1, class_keyword_2]
+
+    prepare_datasets(test_path, height, width, classes_list)
