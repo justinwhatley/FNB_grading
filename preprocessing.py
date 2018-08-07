@@ -159,24 +159,38 @@ def trim_bins(bins, bin_size, evenly = False):
 
     return bins
 
-def create_training_and_validation_dir(path, class_keyword_1, class_keyword_2):
-    # Iterates through image datasets
-    training_set = 'train'
+def create_training_and_validation_dir(path, class_list):
+    """
+    Creates training and validation directories if they do not exist
+    """    
+    training_set = 'training'
     training_directory = os.path.join(path, training_set)
     mkdir(training_directory)
-    MG2_directory = os.path.join(training_directory, class_keyword_1) 
-    mkdir(MG2_directory)
-    MG3_directory = os.path.join(training_directory, class_keyword_2) 
-    mkdir(MG3_directory)
-
+    for class_name in class_list:
+        mkdir(os.path.join(training_directory, class_name))
+    
     validation_set = 'validation'
     validation_directory = os.path.join(path, validation_set)
     mkdir(validation_directory)
-    MG2_directory = os.path.join(validation_directory, class_keyword_1) 
-    mkdir(MG2_directory)
-    MG3_directory = os.path.join(validation_directory, class_keyword_2) 
-    mkdir(MG3_directory)
+    for class_name in class_list:
+        mkdir(os.path.join(validation_directory, class_name))
 
+def separate_into_k_folds(number_of_folds, class_file_list, files_per_fold):
+    """
+    Class_file_list now contains both MG2 at index 0 and MG3 at index 1 separated into k folds
+    # with bin sizes of the specified file limit per fold
+    """
+
+    # Bins the data into k folds
+    binned_class_file_list = []
+    for class_files_list in class_file_list:
+        binned_class_file_list.append(bin_files(class_files_list, number_of_folds))
+    
+    # Trims the data assignment to create folds of equal size
+    for i, binned_file_list in enumerate(binned_class_file_list): 
+        binned_file_list = trim_bins(binned_file_list, files_per_fold[i])
+
+    return binned_class_file_list
 
 def bin_files(file_list, number_of_bins, separate_by_patient = True):
     """
@@ -264,7 +278,7 @@ def make_image_patches(preprocessed_directory, subdirectory, class_keyword, clas
 
 def prepare_datasets(raw_data_path, preprocessed_directory_path, height, width, classes_list, overwrite_previous_preprocessed_data = False):
     """ 
-    Prepares training and validation sets
+    Prepares datasets from raw data
     """
     print('Loading raw data from path: ' + raw_data_path)
 
@@ -272,14 +286,17 @@ def prepare_datasets(raw_data_path, preprocessed_directory_path, height, width, 
     class_files_list = [[] for i in range(len(classes_list))]
     dataset_subdirs = get_subdirectories(raw_data_path) 
     for dataset_subdir in dataset_subdirs:
-
         class_dirs = get_subdirectories(dataset_subdir)
         for class_dir in class_dirs:
             directory_name = class_dir.split('/')[-1]
             # Gets the index associated to the class which was found in the directory names (assumes only one of any specifed class_keyword)
+            
             index_list = [i for i, s in enumerate(classes_list) if directory_name in s]
-            index = index_list[0]
-            # Addes the directory name for files of a given class to the list
+            if index_list:
+                index = index_list[0]
+            else:
+                continue
+            # Adds the directory name for files of a given class to the list
             class_files_list[index].append(class_dir)
 
     # Check if the preprocessed directory is empty
@@ -312,51 +329,46 @@ def prepare_datasets(raw_data_path, preprocessed_directory_path, height, width, 
 
     # Gets patch file data
     patched_class_file_list = get_data_by_class(os.path.join(preprocessed_directory_path, 'patched_data'), classes_list)
-    
-    # Bins the data into k folds
-    binned_class_file_list = []
-    number_of_folds = 5
-    for class_files_list in patched_class_file_list:
-        binned_class_file_list.append(bin_files(class_files_list, number_of_folds))
-    
-    # Trims the data assignment to create folds of equal size
-    file_limit_per_fold =  [4000, 700]
-    for i, binned_file_list in enumerate(binned_class_file_list): 
-        binned_file_list = trim_bins(binned_file_list, file_limit_per_fold[i])
-        print(len(binned_file_list[0]))        
+    original_class_file_list = get_data_by_class(os.path.join(preprocessed_directory_path, 'original_data'), classes_list)
 
-    
-    
-    print(patched_class_file_list)
-    
-    # print()
-    # print('TESTING')
-    # class_file_list = prepare_data_by_class(os.path.join(preprocessed_directory, 'original_data', classes_list))
-    # print(class_file_list)
+    return patched_class_file_list, original_class_file_list
 
-    exit(0)
-    return class_file_list 
- 
 
-def assign_folds_to_training_and_validation(validation_bin_int, bins):
+def copy_files(source_directory, destination_directory, filenames):
+    """
+    Copies all files in a file list from the source directory to a destination directory
+    """
+    from shutil import copy2
+    
+    print('Taking files from input directory: ' + source_directory)
+    print('Storing them in output directory: ' + destination_directory)
+
+    for filename in filenames:
+        copy2(os.path.join(source_directory, filename), destination_directory)
+
+def assign_folds_to_training_and_validation(preprocessed_path, training_validation_path, classes_list, files_in_folds, validation_fold, type = 'original_data'):
+    
+    # Appends the type of file to the training_validation directory
+    training_validation_path = os.path.join(training_validation_path, type)
+
+    # Create training and validation directories if they do not exist
+    create_training_and_validation_dir(training_validation_path, classes_list)
+
     # Make record file of the files that were assigned to the folds
-    # Copy files to training directory
 
-    # Copy files to validation directory
-    pass
-
-
-if __name__ == "__main__":
-    # Linux path
-    # test_path = '/home/justin/Dropbox/FevensLab/FNAB_raw/'
-    
-    # Mac path
-    test_path = '/Users/justinwhatley/Dropbox/FevensLab/FNAB_raw'
-
-    height, width = 224, 224
-
-    class_keyword_1 = 'MG2'
-    class_keyword_2 = 'MG3'
-    classes_list = [class_keyword_1, class_keyword_2]
-
-    prepare_datasets(test_path, height, width, classes_list)
+    # Move training and validation files to the correct directories
+    for i, _class in enumerate(files_in_folds): 
+        training_list = []
+        validation_list = []
+        for j, fold in enumerate(_class):
+            if j == validation_fold: 
+                training_list = fold
+            else: 
+                validation_list.extend(fold)
+        input_directory = os.path.join(preprocessed_path, type, classes_list[i])  
+        output_directory = os.path.join(training_validation_path)
+ 
+        # Copy files to training directory  
+        copy_files(input_directory, os.path.join(output_directory, 'training', classes_list[i]), training_list)
+        # Copy files to validation directory
+        copy_files(input_directory, os.path.join(output_directory, 'validation', classes_list[i]), validation_list)

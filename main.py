@@ -170,24 +170,37 @@ if __name__ == "__main__":
     raw_data_directory_name = 'FNAB_raw'
     raw_data_directory_path = get_path('mac', raw_data_directory_name)
     # raw_data_directory_path = get_path('linux', raw_data_directory_name)
-
     preprocessed_directory_path = os.path.join(os.path.dirname(raw_data_directory_path), 'FNAB_preprocessed')
-
+    training_validaton_path = os.path.join(os.path.dirname(raw_data_directory_path), 'training_validation_dataset')
+    
     class_keyword_1 = 'MG2'
     class_keyword_2 = 'MG3'
     classes_list = [class_keyword_1, class_keyword_2]
 
     # Prepares data
     height, width = 224, 224
-    file_lists_by_class = preprocessing.prepare_datasets(raw_data_directory_path, preprocessed_directory_path, height, width, classes_list)
-    print(file_lists_by_class)
-    exit(0)
+    patched_class_file_list, original_class_file_list = preprocessing.prepare_datasets(raw_data_directory_path, preprocessed_directory_path, height, width, classes_list)
+
+    # Separate data into k-folds
+    number_of_folds = 5
+    files_per_fold =  [4000, 700]
+    patched_files_in_folds = preprocessing.separate_into_k_folds(number_of_folds, patched_class_file_list, files_per_fold)
+    print(patched_files_in_folds)
+
+    files_per_fold =  [90, 20]
+    original_files_in_folds = preprocessing.separate_into_k_folds(number_of_folds, original_class_file_list, files_per_fold)
+    print(original_files_in_folds)
+    
+    # Iterates through folds
+    
+    for i in range(number_of_folds):   
+        validation_fold = i
+        preprocessing.assign_folds_to_training_and_validation(preprocessed_directory_path, training_validaton_path, classes_list, patched_files_in_folds, validation_fold, type = 'patched_data')
+   
+
+   
 
 
-    preprocessed_path = os.path.join(raw_data_directory_path, 'preprocessed')
-
-    # Creates the training and validation directories if they do not exist
-    preprocessing.create_training_and_validation_dir(preprocessed_path, 'MG2', 'MG3')
 
 
 
