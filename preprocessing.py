@@ -159,6 +159,18 @@ def trim_bins(bins, bin_size, evenly = False):
 
     return bins
 
+def remove_dir(path):
+    """
+    Removes directory, ignoring possible errors
+    """
+    from shutil import rmtree
+    print('Removing directory: ' + path)
+    try: 
+        rmtree(path)
+    except:
+        pass
+
+
 def create_training_and_validation_dir(path, class_list):
     """
     Creates training and validation directories if they do not exist
@@ -348,13 +360,16 @@ def copy_files(source_directory, destination_directory, filenames):
 
 def assign_folds_to_training_and_validation(preprocessed_path, training_validation_path, classes_list, files_in_folds, validation_fold, type = 'original_data'):
     
+    # Removes previous training and validation directories
+    remove_dir(training_validation_path)
+
     # Appends the type of file to the training_validation directory
     training_validation_path = os.path.join(training_validation_path, type)
 
     # Create training and validation directories if they do not exist
     create_training_and_validation_dir(training_validation_path, classes_list)
 
-    # Make record file of the files that were assigned to the folds
+    # TODO Make record file of the files that were assigned to the folds
 
     # Move training and validation files to the correct directories
     for i, _class in enumerate(files_in_folds): 
