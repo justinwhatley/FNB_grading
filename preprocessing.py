@@ -288,29 +288,11 @@ def make_image_patches(preprocessed_directory, subdirectory, class_keyword, clas
     for dir in class_file_list:
         split_images(dir, directory, height, width)  
 
-def prepare_datasets(raw_data_path, preprocessed_directory_path, height, width, classes_list, overwrite_previous_preprocessed_data = False):
-    """ 
-    Prepares datasets from raw data
+def create_preprocessed_directory(classes_list, class_files_list, preprocessed_directory_path, height, width, overwrite_previous_preprocessed_data = True):
     """
-    print('Loading raw data from path: ' + raw_data_path)
-
-    # Gets the file paths for different classes
-    class_files_list = [[] for i in range(len(classes_list))]
-    dataset_subdirs = get_subdirectories(raw_data_path) 
-    for dataset_subdir in dataset_subdirs:
-        class_dirs = get_subdirectories(dataset_subdir)
-        for class_dir in class_dirs:
-            directory_name = class_dir.split('/')[-1]
-            # Gets the index associated to the class which was found in the directory names (assumes only one of any specifed class_keyword)
-            
-            index_list = [i for i, s in enumerate(classes_list) if directory_name in s]
-            if index_list:
-                index = index_list[0]
-            else:
-                continue
-            # Adds the directory name for files of a given class to the list
-            class_files_list[index].append(class_dir)
-
+    If the preprocessing directory does not exist, creates one and adds patched data. If overwrite is set, it will remove the previous 
+    directory and make a new preprocessed directory
+    """
     # Check if the preprocessed directory is empty
     empty_directory = False
     mkdir(preprocessed_directory_path)
@@ -339,12 +321,27 @@ def prepare_datasets(raw_data_path, preprocessed_directory_path, height, width, 
             # Copying raw data to preprocessed directory
             copy_original_data_by_class(preprocessed_directory_path, 'original_data', class_keyword, class_files_list[i])
 
-    # Gets patch file data
-    patched_class_file_list = get_data_by_class(os.path.join(preprocessed_directory_path, 'patched_data'), classes_list)
-    original_class_file_list = get_data_by_class(os.path.join(preprocessed_directory_path, 'original_data'), classes_list)
+def get_raw_file_list(raw_data_path, classes_list):
+    print('Loading raw data from path: ' + raw_data_path)
 
-    return patched_class_file_list, original_class_file_list
+    # Gets the file paths for different classes
+    class_files_list = [[] for i in range(len(classes_list))]
+    dataset_subdirs = get_subdirectories(raw_data_path) 
+    for dataset_subdir in dataset_subdirs:
+        class_dirs = get_subdirectories(dataset_subdir)
+        for class_dir in class_dirs:
+            directory_name = class_dir.split('/')[-1]
+            # Gets the index associated to the class which was found in the directory names (assumes only one of any specifed class_keyword)
+            
+            index_list = [i for i, s in enumerate(classes_list) if directory_name in s]
+            if index_list:
+                index = index_list[0]
+            else:
+                continue
+            # Adds the directory name for files of a given class to the list
+            class_files_list[index].append(class_dir)
 
+    return class_files_list
 
 def copy_files(source_directory, destination_directory, filenames):
     """

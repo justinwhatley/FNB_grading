@@ -14,7 +14,6 @@ In our setup, we:
 """ Path to data"""
 
 import preprocessing
-import utils
 
 import os
 
@@ -179,7 +178,13 @@ if __name__ == "__main__":
 
     # Prepares data
     height, width = 224, 224
-    patched_class_file_list, original_class_file_list = preprocessing.prepare_datasets(raw_data_directory_path, preprocessed_directory_path, height, width, classes_list)
+
+    files_list_by_class = preprocessing.get_raw_file_list(raw_data_directory_path, classes_list)
+    preprocessing.create_preprocessed_directory(classes_list, files_list_by_class, preprocessed_directory_path, height, width, overwrite_previous_preprocessed_data = False)
+
+    # Gets patch file data
+    patched_class_file_list = preprocessing.get_data_by_class(os.path.join(preprocessed_directory_path, 'patched_data'), classes_list)
+    original_class_file_list = preprocessing.get_data_by_class(os.path.join(preprocessed_directory_path, 'original_data'), classes_list)
 
     # Separate data into k-folds
     number_of_folds = 5
@@ -197,6 +202,7 @@ if __name__ == "__main__":
         validation_fold = i
         preprocessing.assign_folds_to_training_and_validation(preprocessed_directory_path, training_validaton_path, classes_list, patched_files_in_folds, validation_fold, type = 'patched_data')
         # TODO call training and validation from here
+
         
         exit(0)
 
