@@ -374,9 +374,9 @@ def assign_folds_to_training_and_validation(preprocessed_path, training_validati
         validation_list = []
         for j, fold in enumerate(_class):
             if j == validation_fold: 
-                training_list = fold
+                validation_list = fold
             else: 
-                validation_list.extend(fold)
+                training_list.extend(fold)
         input_directory = os.path.join(preprocessed_path, type, classes_list[i])  
         output_directory = os.path.join(training_validation_path)
  
