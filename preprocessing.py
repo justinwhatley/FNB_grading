@@ -3,6 +3,7 @@ import os
 from PIL import Image
 
 def tif_to_jpg(path):
+    # TODO consider converting to lossless png
     for root, dirs, files in os.walk(path, topdown=False):
         for name in files:
             print(os.path.join(root, name))
@@ -115,7 +116,7 @@ def split_images(input_path, output_path, height, width):
                     img = Image.new('RGB', (height,width), 255)
                     img.paste(piece)
                     # TODO change output to jpg
-                    new_name = name.split('.')[0] + "_part%s.png" % k
+                    new_name = name.split('.')[0] + "_part%s.jpg" % k
                     output = os.path.join(output_path, new_name)
                     img.save(output)
             except Exception as e:
