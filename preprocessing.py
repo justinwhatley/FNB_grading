@@ -356,9 +356,6 @@ def copy_files(source_directory, destination_directory, filenames):
         copy2(os.path.join(source_directory, filename), destination_directory)
 
 def assign_folds_to_training_and_validation(preprocessed_path, training_validation_path, classes_list, files_in_folds, validation_fold, type = 'original_data'):
-    
-    # Removes previous training and validation directories
-    remove_dir(training_validation_path)
 
     # Appends the type of file to the training_validation directory
     training_validation_path = os.path.join(training_validation_path, type)
