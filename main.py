@@ -202,13 +202,13 @@ if __name__ == "__main__":
         validation_fold = i
 
         # Removes previous training and validation directories
-        remove_dir(training_validation_path)
+        preprocessing.remove_dir(training_validaton_path)
 
         preprocessing.assign_folds_to_training_and_validation(preprocessed_directory_path, training_validaton_path, classes_list, patched_files_in_folds, validation_fold, type = 'patched_data')
         # TODO call training and validation from here
         preprocessing.assign_folds_to_training_and_validation(preprocessed_directory_path, training_validaton_path, classes_list, original_files_in_folds, validation_fold, type = 'original_data')
         
-        exit(0)
+        break
 
    
 
