@@ -216,7 +216,7 @@ def bin_files(file_list, number_of_bins, separate_by_patient = True):
     # Simple assignment of files from each patient to bin with the fewest slides
     if separate_by_patient:
         patient_set = get_patients(file_list)
-        print(len(patient_set))
+        # print(len(patient_set))
 
         # Randomly select from the list of possible patients, add these to the smallest bin
         while patient_set:
